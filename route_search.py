@@ -41,7 +41,15 @@ def load_data(attractions_path=ATTRACTIONS_PATH, times_path=TIMES_PATH, mode="wa
 
 
 def compute_scores(attractions, preferences, lam=0.5):
+    missing = [c for c in CATEGORIES if c not in preferences]
+    if missing:
+        raise ValueError(f"Missing preferences for: {missing}")
     weights = np.array([preferences[c] for c in CATEGORIES], dtype=float)
+    if weights.min() < 0 or weights.max() > 5:
+        raise ValueError("Preferences must be between 0 and 5")
+    if not 0 <= lam <= 1:
+        raise ValueError("lam must be between 0 and 1")
+
     x = attractions[CATEGORIES].to_numpy(dtype=float)
     interest = (x @ weights) / (5 * x.sum(axis=1))
 
@@ -51,7 +59,6 @@ def compute_scores(attractions, preferences, lam=0.5):
 
     quality = 0.5 * minmax(attractions["Rating /5"]) + 0.5 * minmax(attractions["Importance /5"])
     return 100 * interest * (1 - lam + lam * quality)
-
 
 def make_expansion(scores, visit, travel, budget):
     n = len(scores)
